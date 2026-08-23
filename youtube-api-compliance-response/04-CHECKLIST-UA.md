@@ -1,42 +1,32 @@
-# Чеклист перед відправкою листа
-
-## Підготовка ефіру
-
-- [ ] YouTube Studio → Go live → **Unlisted** (або Private, якщо чат працює)
-- [ ] Live Chat увімкнено
-- [ ] Другий акаунт готовий писати в чат
-- [ ] Нікого стороннього не модеруємо
+# Чеклист відправки
 
 ## Клієнт
 
-- [ ] Збірка з https://github.com/sergsivak-lang/TiHiY-StreamControl-Center
-- [ ] Додано кнопку **YOUTUBE ЕФІР** → `OpenYouTubeSettings_Click` (див. сценарій)
-- [ ] YouTube Data API v3 увімкнено в Google Cloud
-- [ ] OAuth Desktop + redirect `http://127.0.0.1:17847/`
-- [ ] Scope у згоді лише YouTube (`youtube.force-ssl`)
+- [ ] Накладено `client-patches/streamcontrol-compliance.patch` на source
+- [ ] Зібрано `START-HERE.cmd` (не старий win-x64 без патча)
+- [ ] Є кнопка **YOUTUBE ЕФІР**
+- [ ] Після OAuth видно назву каналу і `youtube.com/channel/...`
 - [ ] Client Secret не в кадрі
-- [ ] Автопідключення YouTube можна лишити увімкненим
 
-## Зйомка
+## Ефір
 
-- [ ] Один суцільний запис (не слайдшоу зі скрінів)
-- [ ] Не натискали фейкові кнопки в «ЧАТ І БОТ»
-- [ ] Показано: OAuth, список/стан ефіру, viewers/likes, вхідний чат, send, delete, mute/ban
-- [ ] Не заявлено unban / liveStreams / moderators API
-- [ ] Відео unlisted YouTube **або** Drive: anyone with the link can view
+- [ ] Unlisted live + chat
+- [ ] Другий акаунт для чату / mute / ban / unban
+- [ ] Нікого стороннього не банимо
 
-## Лист
+## Відео
 
-- [ ] Відповідь **Reply** на їхній email (не нова форма)
-- [ ] Той самий контакт, що в API-проєкті; за потреби CC
-- [ ] Вписано Project number, Project ID, OAuth client ID
-- [ ] Вписано requested quota + коротке обґрунтування
-- [ ] Вставлено лінк на відео
-- [ ] Заповнені таймкоди з `05-TIMECODES-TEMPLATE-EN.txt`
-- [ ] У листі лише методи, які є в `YouTubeService.cs`
+- [ ] Один суцільний запис
+- [ ] OAuth, channels.list, liveBroadcasts.list, viewers/likes, chat, insert, delete, timeout, ban, unban
+- [ ] У діалогах модерації видно target URL і acting URL
+- [ ] Немає фейкових рядків чату
+- [ ] Unlisted YouTube або Drive: anyone with the link
 
-## Після відправки
+## Лист `06-EMAIL-FINAL-SEND-THIS-EN.txt`
 
-- [ ] Збережіть копію листа і лінк на відео
-- [ ] Не видаляйте unlisted відео, поки review відкритий
-- [ ] Якщо попросять test login — відповідайте в тому ж треді
+- [ ] Project name / number / ID
+- [ ] OAuth client ID
+- [ ] Лінк на відео
+- [ ] Таймкоди замість `[m:ss]`
+- [ ] Reply на їхній лист, не нова форма
+- [ ] Той самий email, що в API-проєкті (`tihiy80tv@gmail.com`)

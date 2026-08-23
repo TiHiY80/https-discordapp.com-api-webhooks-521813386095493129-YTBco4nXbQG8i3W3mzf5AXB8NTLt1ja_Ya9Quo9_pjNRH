@@ -1,0 +1,165 @@
+Hello YouTube API Services Team,
+
+Thank you for the second notice. This is the correct API contact email
+for this project.
+
+This reply is for our YouTube API Services compliance review and quota
+extension request. We are not resubmitting the audit form.
+
+------------------------------------------------------------
+1. Product
+------------------------------------------------------------
+Name: TiHiY StreamControl Center
+Type: Windows desktop API client for content creators
+Purpose: Let an authenticated creator retrieve their own live-broadcast
+data and statistics, and operate real-time YouTube Live Chat plus
+moderation from one console.
+
+Public source:
+https://github.com/sergsivak-lang/TiHiY-StreamControl-Center
+
+Creator channel used by this API client:
+https://www.youtube.com/channel/UC4-t_7-LD_E15LXazQmsq_g
+
+Intended users: the creator (and operators acting for that same
+authenticated YouTube channel). We do not scrape third-party channels
+and we do not download or republish YouTube audiovisual content.
+
+------------------------------------------------------------
+2. Google Cloud / OAuth
+------------------------------------------------------------
+Project name: [PASTE from Google Cloud Console]
+Project number: [PASTE]
+Project ID: [PASTE]
+OAuth client type: Desktop app
+OAuth 2.0 client ID: [PASTE]
+Redirect URI registered in the client: http://127.0.0.1:17847/
+APIs enabled: YouTube Data API v3
+
+OAuth scope actually requested by the shipping client
+(this is the only scope; we do not assume additional scopes):
+https://www.googleapis.com/auth/youtube.force-ssl
+
+Authorization code flow:
+- authorization: https://accounts.google.com/o/oauth2/v2/auth
+- token: https://oauth2.googleapis.com/token
+- access_type=offline, prompt=consent, CSRF state
+- access token + refresh token stored in Windows Credential Manager
+  (TiHiY.StreamControlCenter.YOUTUBE_TOKEN)
+- client secret stored in Windows Credential Manager
+  (TiHiY.StreamControlCenter.YOUTUBE_CLIENT_SECRET)
+- client ID stored in local settings (not a secret)
+
+After OAuth the client calls channels.list?part=snippet&mine=true and
+displays the authenticated channel title plus
+https://www.youtube.com/channel/{channelId} in the UI.
+
+------------------------------------------------------------
+3. How YouTube API Services are used
+   (matches the three items in your notice)
+------------------------------------------------------------
+A) Live-stream broadcast data
+   - liveBroadcasts.list (mine=true, part=id,snippet,status)
+     Returns the creator’s broadcasts. The client shows title,
+     description, privacyStatus, lifeCycleStatus, scheduledStartTime,
+     liveChatId, and the watch URL https://www.youtube.com/watch?v={id}.
+   - A connected poll loop uses the same method to detect the live
+     broadcast and attach its liveChatId.
+   - liveBroadcasts.update (part=snippet,status) can update title,
+     description, scheduled start, and privacy of that same broadcast.
+
+B) Live statistics
+   - videos.list (part=liveStreamingDetails,statistics&id={broadcastId})
+     The client displays concurrentViewers and likeCount on the main
+     console next to the YouTube LIVE indicator.
+
+C) Real-time chat integration and moderation
+   - liveChatMessages.list (part=id,snippet,authorDetails)
+     Polling uses nextPageToken and pollingIntervalMillis.
+     The UI shows authorDetails.displayName, message text, role, time,
+     and the author’s channel URL (https://www.youtube.com/channel/{id}).
+   - liveChatMessages.insert — send a text message as the signed-in creator
+   - liveChatMessages.delete — delete a selected message
+   - liveChatBans.insert — temporary timeout (600 seconds) or permanent ban
+     using bannedUserDetails.channelId
+   - liveChatBans.delete — remove a ban created in this session
+     (ban id returned by insert is stored in memory)
+
+Required Minimum Functionality for ban / unban / timeout:
+- Confirmation dialog shows the TARGET channel display name and the
+  TARGET channel URL.
+- The same dialog shows the ACTING YouTube account title and the
+  ACTING channel URL (from channels.list mine=true).
+- Chat rows identify the author by display name; the channel URL is
+  available on the row tooltip.
+
+Methods we do not implement and do not claim:
+- liveStreams.list
+- liveChatMessages.streamList (we use official list + poll)
+- liveChatModerators.*
+
+------------------------------------------------------------
+4. Screencast
+------------------------------------------------------------
+A single end-to-end recording of the real API client:
+[PASTE unlisted YouTube or Google Drive link — anyone with the link can view]
+
+Timecodes:
+[m:ss] TiHiY StreamControl Center start
+[m:ss] КАНАЛИ → YouTube OAuth Desktop loopback; Google consent
+[m:ss] Authenticated channel title + channel URL (channels.list mine=true)
+[m:ss] Module YOUTUBE ЕФІР → ОНОВИТИ СПИСОК (liveBroadcasts.list)
+[m:ss] Selected broadcast title, lifeCycleStatus, privacy, watch URL
+[m:ss] Main console LIVE + concurrent viewers + likes (videos.list)
+[m:ss] Incoming YouTube Live Chat (liveChatMessages.list)
+[m:ss] Send from the YOUTUBE button (liveChatMessages.insert)
+[m:ss] Delete message (liveChatMessages.delete)
+[m:ss] Timeout confirmation showing target + acting channel URLs
+        (liveChatBans.insert temporary)
+[m:ss] Permanent ban confirmation showing target + acting channel URLs
+        (liveChatBans.insert permanent)
+[m:ss] Unban confirmation showing target + acting channel URLs
+        (liveChatBans.delete)
+[m:ss] Closing shot: still the authenticated creator’s own live session
+
+The recording uses a controlled unlisted test broadcast on the
+authenticated creator’s own channel. Client secret, refresh token, and
+other credentials are not shown.
+
+------------------------------------------------------------
+5. Quota request
+------------------------------------------------------------
+Current default allocation: 10,000 units/day
+Requested quota: 100,000 units/day
+
+Justification from the shipping poll loop (YouTubeService.PollLoopAsync):
+While a broadcast is live the client, about every 5 seconds, calls:
+  liveBroadcasts.list          (~1 unit)
+  videos.list                  (1 unit)
+  liveChatMessages.list        (5 units)
+≈ 7 units / 5 s ≈ 5,040 units per live hour.
+
+One 8-hour creator live day ≈ 40,000 units, plus
+liveChatMessages.insert, liveChatBans.insert/delete, liveBroadcasts.update,
+and channels.list. 100,000 units/day covers one long live day with headroom
+and does not include search.list or videos.insert.
+
+This quota is requested only for the use case above (the authenticated
+creator’s own live broadcasts, statistics, chat, and moderation).
+
+------------------------------------------------------------
+6. Data protection
+------------------------------------------------------------
+API tokens and the OAuth client secret are stored in Windows Credential
+Manager, not in source control and not in a world-readable settings file.
+The client accesses only the Google account that completed OAuth.
+
+------------------------------------------------------------
+Please let us know if you need a test account, additional screenshots,
+or any other supporting material.
+
+Thank you,
+Serhii Syvak
+TiHiY StreamControl Center
+tihiy80tv@gmail.com
+This email is the preferred API contact.

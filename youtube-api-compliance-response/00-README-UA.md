@@ -1,24 +1,31 @@
-# Пакет відповіді YouTube API Services (second notice)
+# Повна відповідь на second notice
 
-Це **не** повторна подача форми. Відповідаєте **Reply** на лист YouTube API Services Team
-і прикладаєте **одне суцільне відео** реального TiHiY StreamControl Center.
+Лист Google просить **одне відео реального клієнта** + письмове пояснення.
+Форму audit/quota **повторно не подаємо**. Відповідь = **Reply** на їхній email.
 
-Джерело клієнта (аудит коду): https://github.com/sergsivak-lang/TiHiY-StreamControl-Center  
-Версія в репозиторії: v1.0.5.2
+## Що вже зроблено тут
 
-## Що робити по порядку
+1. **`06-EMAIL-FINAL-SEND-THIS-EN.txt`** — повний текст Reply.
+   Вам лишилось вписати 4 поля: GCP name / number / id, OAuth client ID,
+   лінк на відео, таймкоди.
+2. **`03-API-USAGE-STATEMENT-EN.md`** — додаток по методах (можна прикріпити).
+3. **`client-patches/`** — патч клієнта, без якого відео не закриє RMF
+   (кнопка ефіру, `channels.list`, діалоги target/acting URL, unban).
+4. Сценарій зйомки й чеклист оновлені під цей патч.
 
-1. Прочитайте `04-CHECKLIST-UA.md` і підготуйте тестовий **unlisted** ефір.
-2. Запишіть відео за `02-SCREENCAST-SCRIPT-UA.md` (один дубль, 8–15 хв).
-3. Завантажте як **unlisted YouTube** або Google Drive (anyone with the link can view).
-4. Впишіть лінк і таймкоди в `05-TIMECODES-TEMPLATE-EN.txt`.
-5. Підставте GCP project / Client ID / квоту в `01-EMAIL-REPLY-EN.txt`.
-6. Надішліть **Reply All** з того самого email, куди прийшов notice.
-7. Додайте `03-API-USAGE-STATEMENT-EN.md` як додаток (вставити в лист або прикріпити).
+## Що можу зробити лише ви (технічно неможливо з цього середовища)
 
-## Чого не робити
+- Увійти у ваш Google-акаунт і пройти OAuth.
+- Запустити Windows WPF клієнт і зняти живий unlisted ефір.
+- Натиснути Send у Gmail від вашого API contact.
 
-- Не подавайте форму audit/quota повторно.
-- Не знімайте APIs Explorer, Postman або фейкові кнопки «ДОДАТИ ПІДПИСНИКА / МОДЕРАТОРА».
-- Не показуйте Client Secret, refresh token, Discord/Twitch secrets.
-- Не пишіть Google, що є `liveStreams.list`, unban або `liveChatModerators` — у коді цього немає.
+Без цього кроку Google **не прийме** відповідь: вони явно просять screencast.
+
+## Ваш мінімальний порядок
+
+1. Накласти патч і зібрати клієнт (`APPLY-CLIENT-PATCH-UA.md`).
+2. Unlisted тест-ефір + другий акаунт у чаті.
+3. Записати один ролик за `02-SCREENCAST-SCRIPT-UA.md`.
+4. Unlisted YouTube або Drive (anyone with the link).
+5. Відкрити `06-EMAIL-FINAL-SEND-THIS-EN.txt`, вставити GCP + лінк + таймкоди.
+6. Reply All на лист YouTube API Services Team з `tihiy80tv@gmail.com`.

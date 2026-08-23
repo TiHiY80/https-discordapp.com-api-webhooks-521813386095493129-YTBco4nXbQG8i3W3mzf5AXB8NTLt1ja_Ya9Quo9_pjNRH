@@ -1,151 +1,68 @@
-# Сценарій screencast для Google (один дубль)
+# Сценарій запису (після патча клієнта)
 
-Мета: одне відео 8–15 хвилин. Мова на екрані може бути українською;
-короткий коментар англійською бажаний, не обов’язковий.
+Один дубль 8–15 хв. Коментар англійською бажаний.
 
-Продукт на старті має бути видно: **TiHiY StreamControl Center**.
+## До камери
 
-## До запису (обов’язково)
+1. Накладіть патч і зберіть клієнт (`APPLY-CLIENT-PATCH-UA.md`).
+2. YouTube Studio → Go live → **Unlisted**, чат увімкнений.
+   Назва: `TiHiY StreamControl Center API compliance test`.
+3. Другий YouTube-акаунт пише в чат. Сторонніх не модеруємо.
+4. У **КАНАЛИ** поле Client Secret порожнє або розмите
+   (секрет уже в Credential Manager).
+5. Не відкривайте Discord/Twitch secret, Credential Manager, логи з token.
 
-1. Створіть у YouTube Studio тестовий ефір **Unlisted** (не Public).
-   Заголовок на кшталт: `TiHiY StreamControl Center API compliance test`.
-   Запустіть ефір і залиште Live Chat увімкненим.
-2. Другий YouTube-акаунт (або телефон) відкрийте на сторінці ефіру — з нього
-   напишіть 2–3 тестові повідомлення. **Не баніть сторонніх людей.**
-3. У модулі **КАНАЛИ** Client Secret уже має бути збережений.
-   Перед записом **очистіть поле Client Secret** (секрет лишиться в Credential Manager).
-   Client ID можна лишити видимим — це не секрет того ж рівня, але можна розмити частину.
-4. Не відкривайте Windows Credential Manager, `.json` токенів, Discord/Twitch secret.
-5. **Не натискайте** у «ЧАТ І БОТ»:
-   - ДОДАТИ ЗВЕРНЕННЯ ДО TiHiY-DED
-   - ДОДАТИ ПІДПИСНИКА
-   - ДОДАТИ МОДЕРАТОРА  
-   Це локальні фейкові рядки, не YouTube API.
+## Дубль
 
-### Вікно списку трансляцій
+### 0:00 Старт
+TiHiY StreamControl Center на екрані.
 
-У коді є `YouTubeStreamSettingsWindow` (назва, статус, URL, privacy),
-але в головному меню **немає кнопки**, яка його відкриває
-(`OpenYouTubeSettings_Click` є в `MainWindow.xaml.cs`, у XAML не підключений).
+### OAuth + авторизований канал
+1. **КАНАЛИ**
+2. YouTube → **АВТОРИЗУВАТИ** (Desktop loopback `http://127.0.0.1:17847/`)
+3. Google consent
+4. Показати read-only поля: назва каналу + `https://www.youtube.com/channel/...`
+   (це `channels.list mine=true`)
+5. Закрити вікно так, щоб secret не лишився в кадрі
 
-**Зробіть це до зйомки** (один рядок у блоці МОДУЛІ в `MainWindow.xaml`):
+### Broadcast data
+1. Модуль **YOUTUBE ЕФІР**
+2. **ОНОВИТИ СПИСОК**
+3. Combo: title • lifeCycleStatus • час
+4. Стан `LIVE`, URL `youtube.com/watch?v=...`
+5. Рядок «Авторизований канал» зверху вікна
 
-```xml
-<Button Style="{StaticResource ModuleButton}"
-        Click="OpenYouTubeSettings_Click"
-        Tag="/TiHiY.StreamControlCenter;component/Assets/Platforms/youtube.png"
-        Content="YOUTUBE&#10;ЕФІР"
-        ContentTemplate="{StaticResource BrandModuleContentTemplate}"
-        BorderBrush="#D94854"/>
-```
+### Statistics
+Головне вікно, блок YouTube: 👁 viewers, ♥ likes, **LIVE**,
+статус `В ЕФІРІ • {title}`.
 
-Пере зберіть через `START-HERE.cmd`. Без цього вікна Google не побачить
-title / lifeCycleStatus списком — лише LIVE, viewers і likes на головній.
+### Chat
+З другого акаунта 2 повідомлення. У мультичаті іконка YouTube,
+ім’я, текст. Tooltip рядка = channel URL.
 
-Кнопка **YOUTUBE STUDIO** відкриває браузер Studio, не API-клієнт.
-Studio можна показати 5 секунд як підтвердження живого ефіру, не замість клієнта.
+### Send
+Поле вводу → кнопка **YOUTUBE** →
+`API compliance test message from StreamControl Center`.
 
-## Дубль (покадрово)
+### Delete
+ПКМ по YouTube-повідомленню → **Видалити повідомлення**.
 
-Тримайте поруч секундомір або після монтажу випишіть таймкоди в
-`05-TIMECODES-TEMPLATE-EN.txt`.
+### Timeout
+ПКМ по тестовому глядачу → **Мут на 10 хвилин**.
+Діалог мусить показати:
+- Target YouTube channel + Target channel URL
+- Acting YouTube account + Acting channel URL  
+Yes.
 
-### A. Старт (≈ 0:00–0:20)
+### Ban
+ПКМ → **Забанити користувача**. Той самий діалог для permanent ban. Yes.
 
-- Запустіть TiHiY StreamControl Center.
-- Наведіть на заголовок вікна / назву програми.
-- Скажіть або покажіть текстом: “TiHiY StreamControl Center — creator live console”.
+### Unban
+ПКМ → **Зняти бан YouTube**. Той самий діалог. Yes.
 
-### B. OAuth (≈ 0:20–2:00)
+### Фінал
+Головне вікно: LIVE, статистика, чат. Одна фраза:
+дані лише для каналу, який пройшов OAuth.
 
-1. Кнопка **КАНАЛИ**.
-2. Блок YouTube: назва каналу, Client ID.
-3. Поле Client Secret порожнє або розмите.
-4. **АВТОРИЗУВАТИ**.
-5. Google consent: акаунт творця, scope YouTube.
-6. Повернення: статус на кшталт **ОЧІКУВАННЯ БРАУЗЕРА** → підключення.
-7. Закрийте вікно каналів або прокрутіть, щоб secret не лишився в кадрі.
-8. На головній: `YOUTUBE:` статус (ПОШУК ТРАНСЛЯЦІЇ / ЧАТ ПІДКЛЮЧЕНО / В ЕФІРІ).
-
-Якщо токен уже валідний: все одно покажіть **АВТОРИЗУВАТИ** один раз
-або **ПІДКЛЮЧИТИ**, щоб було видно живий сеанс, не скрін.
-
-### C. Broadcast data — `liveBroadcasts.list` (≈ 2:00–4:00)
-
-1. Модуль **YOUTUBE ЕФІР** (після додавання кнопки).
-2. **ОНОВИТИ СПИСОК**.
-3. Combo: тестовий ефір, `Display` = title • lifeCycleStatus • час.
-4. Поля: назва, опис, доступ, запланований початок.
-5. **Стан** (`LifeCycleText`, очікувано `LIVE`).
-6. **Посилання** `https://www.youtube.com/watch?v=...`.
-7. Коротко: “This list is liveBroadcasts.list mine=true for the signed-in channel.”
-
-Потім головне вікно: індикатор **LIVE**, статус **В ЕФІРІ**.
-
-### D. Statistics — `videos.list` (≈ 4:00–5:00)
-
-У шапці мультичату блок YouTube:
-
-- 👁 `YouTubeViewerText` (concurrentViewers)
-- ♥ `YouTubeLikesText` (likeCount)
-- крапка + **LIVE**
-
-Почекайте 5–10 с, щоб лічильник оновився після poll. Наведіть курсор.
-
-Не використовуйте CI/demo режим, де в коді підставляються фейкові “7 likes”.
-
-### E. Live chat — `liveChatMessages.list` (≈ 5:00–6:30)
-
-1. Мультичат: іконка YouTube, ім’я автора, текст, час.
-2. З другого акаунта надішліть 2 повідомлення.
-3. Покажіть, що вони з’являються без ручного refresh.
-4. Статус чату: **YouTube чат підключено**.
-
-### F. Send — `liveChatMessages.insert` (≈ 6:30–7:30)
-
-1. Поле вводу на головній.
-2. Кнопка **YOUTUBE** (не TWITCH і не ОБИДВА, якщо не треба).
-3. Текст на кшталт: `API compliance test message from StreamControl Center`.
-4. Повідомлення з’являється в чаті клієнта і на сторінці ефіру (можна 3 с показати вкладку watch, потім назад).
-
-### G. Delete — `liveChatMessages.delete` (≈ 7:30–8:30)
-
-1. Правий клік по **YouTube**-повідомленню (краще своє тестове).
-2. **Видалити повідомлення**.
-3. Рядок зникає зі списку; на сторінці ефіру повідомлення теж зникає.
-
-### H. Timeout + ban — `liveChatBans.insert` (≈ 8:30–11:00)
-
-Працюйте **лише** з тестовим другим акаунтом.
-
-**Timeout**
-
-1. Правий клік по повідомленню тестового глядача.
-2. **МУТ НА 10 ХВ** / «Замутити користувача».
-3. На екрані видно **ім’я** (`ChatMessage.User` = `authorDetails.displayName`)
-   і платформу **YOUTUBE**.
-4. З другого акаунта спробуйте ще раз написати — має бути обмеження.
-
-**Ban**
-
-1. Правий клік → **Забанити користувача**.
-2. Діалог: `Забанити {ім’я} на YOUTUBE?` → Yes.
-3. Назвіть у кадрі: дія від **авторизованого** каналу творця
-   (статус YouTube на головній).
-
-У поточній збірці діалог **не показує URL каналу** цілі і **немає unban**.
-Не кажіть, що unban реалізовано. Якщо Google спитає RMF (ім’я + посилання
-на канал + хто виконує дію) — це наступний патч UI, не вигадка на відео.
-
-### I. Кінець (≈ 11:00–12:00)
-
-- Поверніть головне вікно: LIVE, viewers/likes, чат.
-- Одна фраза: дані лише для каналу, який пройшов Google OAuth.
-- Зупиніть запис. Ефір можна зупинити після відео.
-
-## Що не монтувати в ролик
-
-- Поля паролів, токени, журнал з тілом помилки, де Google повернув token.
-- Discord / Twitch OAuth, якщо це розмиває фокус (можна не відкривати).
-- Кнопки фейкових рядків чату.
-- Довгий OBS/музика/Donatello — не тема цього листа.
+Заповніть таймкоди в `05-TIMECODES-TEMPLATE-EN.txt` і вставте їх
+у `06-EMAIL-FINAL-SEND-THIS-EN.txt`.

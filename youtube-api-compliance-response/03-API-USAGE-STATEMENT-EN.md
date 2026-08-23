@@ -72,7 +72,9 @@ Main chat context menu (мут / бан / видалити)
 | `liveChatMessages.list` | GET | `liveChat/messages?part=id,snippet,authorDetails&liveChatId=...` | `items[].id`, `snippet.type`, `snippet.displayMessage`, `authorDetails.displayName`, `authorDetails.channelId`, roles, Super Chat/Member details, `nextPageToken`, `pollingIntervalMillis` | Multichat list (platform icon YOUTUBE, user, text) |
 | `liveChatMessages.insert` | POST | `liveChat/messages?part=snippet` | success / error | Button **YOUTUBE** on main chat and ChatBot window |
 | `liveChatMessages.delete` | DELETE | `liveChat/messages?id=...` | success / error | Context menu **Видалити повідомлення** |
-| `liveChatBans.insert` | POST | `liveChat/bans?part=snippet` | success / error | Context menu **МУТ НА 10 ХВ** (temporary 600s) and **Забанити** (permanent) |
+| `channels.list` | GET | `channels?part=snippet&mine=true` | `id`, `snippet.title` | **КАНАЛИ** and **YOUTUBE ЕФІР**: authenticated title + `https://www.youtube.com/channel/{id}` |
+| `liveChatBans.insert` | POST | `liveChat/bans?part=snippet` | `id` stored for unban | Context menu mute (temporary 600s) and ban (permanent). Confirm dialog shows target + acting channel URLs |
+| `liveChatBans.delete` | DELETE | `liveChat/bans?id={banId}` | success / error | Context menu **Зняти бан YouTube** for a ban created in this session |
 
 Base URL for all Data API calls: `https://www.googleapis.com/youtube/v3/`
 
@@ -89,10 +91,7 @@ Base URL for all Data API calls: `https://www.googleapis.com/youtube/v3/`
 |---|---|
 | `liveStreams.list` | No call site |
 | `liveChatMessages.streamList` | No call site (client uses official list + poll) |
-| `liveChatBans.delete` | No unban API or UI |
-| `liveChatModerators.*` | No API. ChatBot button **ДОДАТИ МОДЕРАТОРА** only inserts a **local fake Twitch row** — do not use on the screencast |
-| `channels.list?mine=true` | Not called. Channel title in **КАНАЛИ** is a user-typed `YouTubeChannelName` (default `TiHiY-DED`), not the OAuth channel resource |
-| Authenticated channel ID in UI | Not displayed from API |
+| `liveChatModerators.*` | No API. ChatBot preview buttons are disabled |
 
 ## Error handling
 
@@ -112,6 +111,6 @@ Yes, for the implemented methods, if:
 1. Google Cloud OAuth Desktop client is configured with redirect `http://127.0.0.1:17847/`;
 2. YouTube Data API v3 is enabled;
 3. the same Google account has a **live** broadcast with chat;
-4. the operator does not click ChatBot diagnostic fake-row buttons.
+4. the compliance patch is applied so YOUTUBE ЕФІР, RMF dialogs, channels.list, and unban are visible.
 
-Cannot be demonstrated from this client: stream ingest (`liveStreams`), unban, moderator-list API, or API-verified channel title via `channels.list`.
+Cannot be demonstrated from this client: `liveStreams.list` ingest objects and `liveChatModerators.*`.
