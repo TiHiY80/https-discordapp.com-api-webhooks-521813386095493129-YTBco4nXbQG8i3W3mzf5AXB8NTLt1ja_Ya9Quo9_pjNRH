@@ -1,0 +1,18 @@
+Screencast: TiHiY StreamControl Center — YouTube API Services compliance
+Video URL: [paste]
+Duration: [mm:ss]
+Date recorded: [YYYY-MM-DD]
+Test broadcast: unlisted, authenticated creator channel UC4-t_7-LD_E15LXazQmsq_g
+
+[m:ss]  Application start; TiHiY StreamControl Center visible
+[m:ss]  КАНАЛИ → YouTube OAuth (Desktop loopback http://127.0.0.1:17847/)
+[m:ss]  Google consent completed; client status shows connected YouTube session
+[m:ss]  liveBroadcasts.list — broadcast list / title / lifeCycleStatus / watch URL
+[m:ss]  Main window live indicator (YOUTUBE LIVE / В ЕФІРІ)
+[m:ss]  videos.list statistics — concurrent viewers and likes
+[m:ss]  liveChatMessages.list — incoming YouTube chat (author display name + text)
+[m:ss]  liveChatMessages.insert — send from the YOUTUBE button
+[m:ss]  liveChatMessages.delete — context menu “Видалити повідомлення”
+[m:ss]  liveChatBans.insert temporary — “МУТ НА 10 ХВ” on test viewer
+[m:ss]  liveChatBans.insert permanent — “Забанити користувача” on test viewer
+[m:ss]  Closing shot: live + chat still running for the signed-in creator
