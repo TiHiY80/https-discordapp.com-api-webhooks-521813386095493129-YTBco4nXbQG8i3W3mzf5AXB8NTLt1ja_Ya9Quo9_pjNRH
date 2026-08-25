@@ -4,8 +4,8 @@
 Лишив програму StreamControl: OAuth, ефір, чат, надсилання, бан.
 Англійський голос + субтитри вже накладені.
 
-Файл:
-youtube-api-compliance-response/out/TiHiY-YouTube-API-compliance-screencast.mp4
+Скачати файл (кнопка Download):
+https://github.com/TiHiY80/https-discordapp.com-api-webhooks-521813386095493129-YTBco4nXbQG8i3W3mzf5AXB8NTLt1ja_Ya9Quo9_pjNRH/raw/cursor/youtube-compliance-response-ab85/TiHiY-YouTube-API-compliance-screencast.mp4
 
 Що зробити тобі:
 1. Залий цей файл на YouTube як Неопублікований (Unlisted)
