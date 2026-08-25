@@ -1,34 +1,38 @@
 Hello YouTube API Services Team,
 
 Thank you for the follow-up. Please find the requested English-language
-screencast of the complete TiHiY StreamControl Center workflow.
+screencast of TiHiY StreamControl Center.
 
-Screencast (unlisted YouTube or Google Drive, anyone with the link):
+Screencast (unlisted YouTube):
 [PASTE LINK]
 
-The recording shows the end-to-end workflow and results:
+Duration: 5 minutes 19 seconds.
+The original 8-minute live VOD was trimmed to the API client UI
+(YouTube Studio overlays and idle waits removed). English narration
+and on-screen captions name each YouTube Data API method.
 
-[m:ss]  Start of TiHiY StreamControl Center
-[m:ss]  OAuth authorization (Desktop app, http://127.0.0.1:17847/)
-[m:ss]  Authenticated channel title and URL (channels.list mine=true)
-[m:ss]  Broadcast list, title, lifeCycleStatus, watch URL (liveBroadcasts.list)
-[m:ss]  Live viewers and likes (videos.list liveStreamingDetails + statistics)
-[m:ss]  Incoming YouTube Live Chat (liveChatMessages.list)
-[m:ss]  Send a chat message (liveChatMessages.insert)
-[m:ss]  Delete a chat message (liveChatMessages.delete)
-[m:ss]  Timeout with target and acting channel URLs (liveChatBans.insert)
-[m:ss]  Permanent ban with the same RMF identification (liveChatBans.insert)
-[m:ss]  Unban (liveChatBans.delete)
-[m:ss]  End result: still connected to the authenticated creator’s own live session
+[0:00]  TiHiY StreamControl Center (desktop API client)
+[0:14]  Channels: YouTube OAuth Desktop, http://127.0.0.1:17847/,
+        scope youtube.force-ssl (secret not shown in clear text)
+[0:54]  Authenticated channel TiHiY-DED, YouTube chat connected
+[1:18]  Broadcast retrieval: liveBroadcasts.list mine=true
+        (title, lifeCycleStatus LIVE, watch URL)
+[2:14]  Incoming YouTube Live Chat: liveChatMessages.list
+[3:24]  Send from the client: liveChatMessages.insert
+        End result: “API compliance test from StreamControl Center”
+[4:20]  Moderation: liveChatBans.insert
+        End result: confirm ban of a test chat user on this live chat
+[5:03]  End result: still on the authenticated creator’s own live session
 
 Product: TiHiY StreamControl Center
 Source: https://github.com/sergsivak-lang/TiHiY-StreamControl-Center
 Channel: https://www.youtube.com/channel/UC4-t_7-LD_E15LXazQmsq_g
 OAuth scope used: https://www.googleapis.com/auth/youtube.force-ssl
 
-Please let us know if you need anything else.
+The client does not scrape third-party channels.
 
 Thank you,
 Serhii Syvak
 TiHiY StreamControl Center
 tihiy80tv@gmail.com
+This email is the preferred API contact.
