@@ -1,0 +1,25 @@
+Hello YouTube API Services Team,
+
+Thank you for reviewing our previous response and for the follow-up.
+
+We will provide the requested screencast in this same email thread
+within seven (7) business days.
+
+The recording will be in English and will show the complete TiHiY
+StreamControl Center workflow, step by step, with end results:
+
+1. YouTube OAuth authorization (Desktop app, loopback redirect)
+2. Retrieval of the authenticated creator’s live broadcast data
+   (liveBroadcasts.list) and live statistics (videos.list)
+3. Real-time live chat management and moderation
+   (liveChatMessages.list / insert / delete, liveChatBans.insert / delete)
+
+The screencast will use a controlled unlisted test broadcast on the
+authenticated creator’s own channel. No client secrets or refresh tokens
+will be shown.
+
+This email is the correct API contact: tihiy80tv@gmail.com
+Serhii Syvak, TiHiY StreamControl Center.
+
+Thank you,
+Serhii Syvak

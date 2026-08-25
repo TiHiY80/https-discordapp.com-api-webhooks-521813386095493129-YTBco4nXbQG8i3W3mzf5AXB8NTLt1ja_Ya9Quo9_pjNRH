@@ -1,0 +1,34 @@
+Hello YouTube API Services Team,
+
+Thank you for the follow-up. Please find the requested English-language
+screencast of the complete TiHiY StreamControl Center workflow.
+
+Screencast (unlisted YouTube or Google Drive, anyone with the link):
+[PASTE LINK]
+
+The recording shows the end-to-end workflow and results:
+
+[m:ss]  Start of TiHiY StreamControl Center
+[m:ss]  OAuth authorization (Desktop app, http://127.0.0.1:17847/)
+[m:ss]  Authenticated channel title and URL (channels.list mine=true)
+[m:ss]  Broadcast list, title, lifeCycleStatus, watch URL (liveBroadcasts.list)
+[m:ss]  Live viewers and likes (videos.list liveStreamingDetails + statistics)
+[m:ss]  Incoming YouTube Live Chat (liveChatMessages.list)
+[m:ss]  Send a chat message (liveChatMessages.insert)
+[m:ss]  Delete a chat message (liveChatMessages.delete)
+[m:ss]  Timeout with target and acting channel URLs (liveChatBans.insert)
+[m:ss]  Permanent ban with the same RMF identification (liveChatBans.insert)
+[m:ss]  Unban (liveChatBans.delete)
+[m:ss]  End result: still connected to the authenticated creator’s own live session
+
+Product: TiHiY StreamControl Center
+Source: https://github.com/sergsivak-lang/TiHiY-StreamControl-Center
+Channel: https://www.youtube.com/channel/UC4-t_7-LD_E15LXazQmsq_g
+OAuth scope used: https://www.googleapis.com/auth/youtube.force-ssl
+
+Please let us know if you need anything else.
+
+Thank you,
+Serhii Syvak
+TiHiY StreamControl Center
+tihiy80tv@gmail.com
