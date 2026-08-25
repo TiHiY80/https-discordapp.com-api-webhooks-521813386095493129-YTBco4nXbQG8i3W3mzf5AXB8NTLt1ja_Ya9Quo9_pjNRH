@@ -1,0 +1,499 @@
+diff --git a/MainWindow.xaml b/MainWindow.xaml
+index 15306c6..0c178b2 100644
+--- a/MainWindow.xaml
++++ b/MainWindow.xaml
+@@ -312,7 +312,7 @@
+                                     <ListBox x:Name="MainChatList" ItemsSource="{Binding MainChatMessages}" ScrollViewer.VerticalScrollBarVisibility="Auto" ScrollViewer.HorizontalScrollBarVisibility="Disabled" VirtualizingPanel.IsVirtualizing="True" VirtualizingPanel.VirtualizationMode="Recycling" PreviewMouseRightButtonDown="MainChatList_PreviewMouseRightButtonDown">
+                                         <ListBox.ItemTemplate>
+                                             <DataTemplate DataType="{x:Type models:ChatMessage}">
+-                                                <Border Background="{Binding Background}" CornerRadius="3" Padding="3,5">
++                                                <Border Background="{Binding Background}" CornerRadius="3" Padding="3,5" ToolTip="{Binding ChannelUrl}">
+                                                     <Grid>
+                                                         <Grid.ColumnDefinitions>
+                                                             <ColumnDefinition Width="72"/>
+@@ -552,6 +552,7 @@
+                                     <Button Style="{StaticResource ModuleButton}" Click="OpenOverlay_Click" Tag="/TiHiY.StreamControlCenter;component/Assets/Platforms/obs.png" Content="OVERLAY OBS" ContentTemplate="{StaticResource BrandModuleContentTemplate}"/>
+                                     <Button Style="{StaticResource ModuleButton}" Click="OpenMusic_Click" Tag="" Content="МУЗИКА&#10;NOW PLAYING" ContentTemplate="{StaticResource ModuleContentTemplate}"/>
+                                     <Button Style="{StaticResource ModuleButton}" Click="OpenNotifications_Click" Tag="/TiHiY.StreamControlCenter;component/Assets/Platforms/discord.png" Content="СПОВІЩЕННЯ&#10;DISCORD BOT" ContentTemplate="{StaticResource BrandModuleContentTemplate}" BorderBrush="#5865F2"/>
++                                    <Button Style="{StaticResource ModuleButton}" Click="OpenYouTubeSettings_Click" Tag="/TiHiY.StreamControlCenter;component/Assets/Platforms/youtube.png" Content="YOUTUBE&#10;ЕФІР" ContentTemplate="{StaticResource BrandModuleContentTemplate}" BorderBrush="#D94854"/>
+                                     <Button Style="{StaticResource ModuleButton}" Click="OpenYouTubeStudioDashboard_Click" Tag="/TiHiY.StreamControlCenter;component/Assets/Platforms/youtube.png" Content="YOUTUBE&#10;STUDIO" ContentTemplate="{StaticResource BrandModuleContentTemplate}" BorderBrush="#D94854"/>
+                                     <Button Style="{StaticResource ModuleAmberButton}" Click="OpenDonatello_Click" Tag="/TiHiY.StreamControlCenter;component/Assets/Platforms/donatello.png" Content="DONATELLO&#10;ДОНАТИ" ContentTemplate="{StaticResource BrandModuleContentTemplate}"/>
+                                     <Button Style="{StaticResource ModuleButton}" Click="OpenJournal_Click" Tag="" Content="ЖУРНАЛ&#10;ПОДІЙ" ContentTemplate="{StaticResource ModuleContentTemplate}"/>
+diff --git a/MainWindow.xaml.cs b/MainWindow.xaml.cs
+index 8002230..ae1194a 100644
+--- a/MainWindow.xaml.cs
++++ b/MainWindow.xaml.cs
+@@ -353,7 +353,11 @@ public partial class MainWindow : Window
+         YouTubeLiveDot.Fill = GetBrushResource(settings.YouTubeLive ? "Green" : "Muted");
+         TwitchTopStatusText.Text = _services.Twitch.IsChatConnected ? (settings.TwitchLive ? "LIVE" : "CHAT ON") : _services.Twitch.Status;
+         TwitchTopStatusText.Foreground = GetBrushResource(_services.Twitch.IsChatConnected ? (settings.TwitchLive ? "Green" : "Purple") : "Muted");
+-        YouTubeTopStatusText.Text = _services.YouTube.IsConnected ? (settings.YouTubeLive ? "В ЕФІРІ" : _services.YouTube.Status) : _services.YouTube.Status;
++        var youtubeTitle = string.IsNullOrWhiteSpace(settings.YouTubeStreamTitle) ? string.Empty : " • " + settings.YouTubeStreamTitle;
++        if (youtubeTitle.Length > 42) youtubeTitle = youtubeTitle[..41] + "…";
++        YouTubeTopStatusText.Text = _services.YouTube.IsConnected
++            ? (settings.YouTubeLive ? "В ЕФІРІ" + youtubeTitle : _services.YouTube.Status)
++            : _services.YouTube.Status;
+         YouTubeTopStatusText.Foreground = GetBrushResource(_services.YouTube.IsConnected ? (settings.YouTubeLive ? "Green" : "Red") : "Muted");
+         var donatelloLabel = _services.Donatello.IsRunning
+             ? (_services.Donatello.ConsecutiveErrors >= 3 ? $"ПОМИЛКА ({_services.Donatello.ConsecutiveErrors})" : "ПІДКЛЮЧЕНО")
+@@ -403,6 +407,10 @@ public partial class MainWindow : Window
+         ban.Click += BanChatUser_Click;
+         menu.Items.Add(ban);
+ 
++        var unban = new MenuItem { Header = "Зняти бан YouTube" };
++        unban.Click += UnbanChatUser_Click;
++        menu.Items.Add(unban);
++
+         menu.Items.Add(new Separator());
+ 
+         var delete = new MenuItem { Header = "Видалити повідомлення" };
+@@ -415,7 +423,11 @@ public partial class MainWindow : Window
+             foreach (var item in menu.Items.OfType<MenuItem>())
+             {
+                 item.Tag = message;
+-                item.IsEnabled = message is not null;
++                var youtube = message is not null && message.Platform.Equals("YOUTUBE", StringComparison.OrdinalIgnoreCase);
++                if (item.Header is string header && header.Contains("Зняти бан", StringComparison.Ordinal))
++                    item.IsEnabled = youtube && _services.YouTube.HasStoredBan(message!.AuthorId);
++                else
++                    item.IsEnabled = message is not null;
+             }
+         };
+ 
+@@ -442,16 +454,31 @@ public partial class MainWindow : Window
+     private async void MuteChatUser_Click(object sender, RoutedEventArgs e)
+     {
+         if (sender is not MenuItem { Tag: ChatMessage message }) return;
++        if (!ConfirmYouTubeModeration(message, "Timeout this YouTube channel in live chat for 10 minutes?")) return;
+         await RunModerationAsync(message, "мут", () => _services.ModerateChatUserAsync(message, false, 600));
+     }
+ 
+     private async void BanChatUser_Click(object sender, RoutedEventArgs e)
+     {
+         if (sender is not MenuItem { Tag: ChatMessage message }) return;
+-        if (MessageBox.Show(this, $"Забанити {message.User} на {message.Platform}?", "Модерація чату", MessageBoxButton.YesNo, MessageBoxImage.Warning) != MessageBoxResult.Yes) return;
++        if (!ConfirmYouTubeModeration(message, "Permanently ban this YouTube channel from live chat?")) return;
+         await RunModerationAsync(message, "бан", () => _services.ModerateChatUserAsync(message, true));
+     }
+ 
++    private async void UnbanChatUser_Click(object sender, RoutedEventArgs e)
++    {
++        if (sender is not MenuItem { Tag: ChatMessage message }) return;
++        if (!ConfirmYouTubeModeration(message, "Remove the live-chat ban from this YouTube channel?")) return;
++        await RunModerationAsync(message, "зняття бану", () => _services.UnbanChatUserAsync(message));
++    }
++
++    private bool ConfirmYouTubeModeration(ChatMessage message, string actionEnglish)
++    {
++        if (!message.Platform.Equals("YOUTUBE", StringComparison.OrdinalIgnoreCase))
++            return MessageBox.Show(this, $"{actionEnglish}\n\n{message.User} / {message.Platform}", "Chat moderation", MessageBoxButton.YesNo, MessageBoxImage.Warning) == MessageBoxResult.Yes;
++        return MessageBox.Show(this, _services.BuildYouTubeModerationPrompt(message, actionEnglish), "YouTube live chat moderation", MessageBoxButton.YesNo, MessageBoxImage.Warning) == MessageBoxResult.Yes;
++    }
++
+     private async void DeleteChatMessage_Click(object sender, RoutedEventArgs e)
+     {
+         if (sender is not MenuItem { Tag: ChatMessage message }) return;
+diff --git a/Models/AppSettings.cs b/Models/AppSettings.cs
+index 67ba103..0281844 100644
+--- a/Models/AppSettings.cs
++++ b/Models/AppSettings.cs
+@@ -21,6 +21,7 @@ public sealed class AppSettings
+     public string TwitchCurrentStreamId { get; set; } = string.Empty;
+ 
+     public string YouTubeChannelName { get; set; } = "TiHiY-DED";
++    public string YouTubeChannelId { get; set; } = string.Empty;
+     public string YouTubeClientId { get; set; } = string.Empty;
+     public bool YouTubeAutoConnect { get; set; } = true;
+     public string YouTubeActiveBroadcastId { get; set; } = string.Empty;
+diff --git a/Models/ChatMessage.cs b/Models/ChatMessage.cs
+index 87143dc..baf8de6 100644
+--- a/Models/ChatMessage.cs
++++ b/Models/ChatMessage.cs
+@@ -9,6 +9,7 @@ public sealed class ChatMessage
+     public string Role { get; set; } = "Viewer";
+     public string ExternalId { get; set; } = string.Empty;
+     public string AuthorId { get; set; } = string.Empty;
++    public string ChannelUrl { get; set; } = string.Empty;
+     public string Foreground { get; set; } = "#EDF7FF";
+     public string Background { get; set; } = "Transparent";
+     public bool IsHighlighted { get; set; }
+diff --git a/Services/AppServices.cs b/Services/AppServices.cs
+index 7de9e73..38b2d47 100644
+--- a/Services/AppServices.cs
++++ b/Services/AppServices.cs
+@@ -196,6 +196,33 @@ public sealed class AppServices : IAsyncDisposable
+             throw new InvalidOperationException(string.Join(Environment.NewLine, errors));
+     }
+ 
++    public string BuildYouTubeModerationPrompt(ChatMessage message, string actionEnglish)
++    {
++        var targetUrl = message.ChannelUrl;
++        if (string.IsNullOrWhiteSpace(targetUrl) && !string.IsNullOrWhiteSpace(message.AuthorId)
++            && message.Platform.Equals("YOUTUBE", StringComparison.OrdinalIgnoreCase))
++            targetUrl = "https://www.youtube.com/channel/" + message.AuthorId;
++        var actingTitle = string.IsNullOrWhiteSpace(YouTube.AuthenticatedChannelTitle)
++            ? Settings.Value.YouTubeChannelName
++            : YouTube.AuthenticatedChannelTitle;
++        var actingUrl = YouTube.AuthenticatedChannelUrl;
++        return
++            actionEnglish + Environment.NewLine + Environment.NewLine +
++            "Target YouTube channel: " + message.User + Environment.NewLine +
++            "Target channel URL: " + (string.IsNullOrWhiteSpace(targetUrl) ? "(not provided by chat event)" : targetUrl) + Environment.NewLine + Environment.NewLine +
++            "Acting YouTube account: " + (string.IsNullOrWhiteSpace(actingTitle) ? "(authorize YouTube first)" : actingTitle) + Environment.NewLine +
++            "Acting channel URL: " + (string.IsNullOrWhiteSpace(actingUrl) ? "(authorize YouTube first)" : actingUrl);
++    }
++
++    public async Task UnbanChatUserAsync(ChatMessage message)
++    {
++        if (string.IsNullOrWhiteSpace(message.AuthorId))
++            throw new InvalidOperationException("Платформа не передала ID учасника чату.");
++        if (!message.Platform.Equals("YOUTUBE", StringComparison.OrdinalIgnoreCase))
++            throw new InvalidOperationException("Зняття бану в цьому клієнті реалізовано для YouTube live chat.");
++        await YouTube.UnbanUserAsync(message.AuthorId);
++    }
++
+     public async Task ModerateChatUserAsync(ChatMessage message, bool permanent, int timeoutSeconds = 600)
+     {
+         if (string.IsNullOrWhiteSpace(message.AuthorId))
+diff --git a/Services/ChatService.cs b/Services/ChatService.cs
+index c76d505..30315a7 100644
+--- a/Services/ChatService.cs
++++ b/Services/ChatService.cs
+@@ -50,6 +50,7 @@ public sealed class ChatService
+         message.Time = incoming.Time;
+         message.ExternalId = incoming.ExternalId;
+         message.AuthorId = incoming.AuthorId;
++        message.ChannelUrl = incoming.ChannelUrl;
+         Messages.Add(message);
+         while (Messages.Count > 300) Messages.RemoveAt(0);
+         _messagesSinceLastNotice++;
+diff --git a/Services/YouTubeService.cs b/Services/YouTubeService.cs
+index 156162e..22e5549 100644
+--- a/Services/YouTubeService.cs
++++ b/Services/YouTubeService.cs
+@@ -26,12 +26,19 @@ public sealed class YouTubeService : IAsyncDisposable
+     private bool _lastLive;
+     private string _lastBroadcastId = string.Empty;
+     private readonly HashSet<string> _seenDonationIds = new(StringComparer.Ordinal);
++    private readonly Dictionary<string, string> _banIdsByChannel = new(StringComparer.Ordinal);
+ 
+     public bool IsAuthorized => !string.IsNullOrWhiteSpace(_token.AccessToken);
+     public bool IsConnected => _pollLoop is not null && !_pollLoop.IsCompleted;
+     public bool HasLiveChat => IsConnected && !string.IsNullOrWhiteSpace(_liveChatId);
+     public string Status { get; private set; } = "НЕ ПІДКЛЮЧЕНО";
+     public string ActiveBroadcastId => _broadcastId;
++    public string AuthenticatedChannelId { get; private set; } = string.Empty;
++    public string AuthenticatedChannelTitle { get; private set; } = string.Empty;
++    public string AuthenticatedChannelUrl => string.IsNullOrWhiteSpace(AuthenticatedChannelId)
++        ? string.Empty
++        : "https://www.youtube.com/channel/" + AuthenticatedChannelId;
++    public string ActiveBroadcastTitle => _settings.Value.YouTubeStreamTitle;
+     public event EventHandler? StatusChanged;
+     public event EventHandler<ChatMessage>? MessageReceived;
+     public event EventHandler<DonationEvent>? DonationReceived;
+@@ -45,6 +52,8 @@ public sealed class YouTubeService : IAsyncDisposable
+         _credentials = credentials;
+         _logger = logger;
+         LoadToken();
++        AuthenticatedChannelId = _settings.Value.YouTubeChannelId;
++        AuthenticatedChannelTitle = _settings.Value.YouTubeChannelName;
+     }
+ 
+     public async Task AuthorizeAsync(string clientId, string clientSecret, CancellationToken token = default)
+@@ -74,6 +83,7 @@ public sealed class YouTubeService : IAsyncDisposable
+         if (!result.TryGetValue("code", out var code) || string.IsNullOrWhiteSpace(code)) throw new InvalidOperationException("Google OAuth не повернув код.");
+         _token = await ExchangeCodeAsync(code, clientId.Trim(), effectiveClientSecret, token);
+         SaveToken();
++        await RefreshAuthenticatedChannelAsync(token);
+         _settingsService.Save(_settings.Value);
+         await ConnectAsync(token);
+     }
+@@ -82,6 +92,7 @@ public sealed class YouTubeService : IAsyncDisposable
+     {
+         await EnsureTokenAsync(token);
+         if (!_token.IsUsable) throw new InvalidOperationException("YouTube не авторизовано.");
++        await RefreshAuthenticatedChannelAsync(token);
+         await DisconnectAsync();
+         _cts = CancellationTokenSource.CreateLinkedTokenSource(token);
+         _pollLoop = Task.Run(() => PollLoopAsync(_cts.Token));
+@@ -129,7 +140,22 @@ public sealed class YouTubeService : IAsyncDisposable
+             ["bannedUserDetails"] = new JsonObject { ["channelId"] = channelId }
+         };
+         if (!permanent && durationSeconds.HasValue) snippet["banDurationSeconds"] = durationSeconds.Value.ToString();
+-        await ApiAsync(HttpMethod.Post, "liveChat/bans?part=snippet", new JsonObject { ["snippet"] = snippet }, token);
++        var result = await ApiAsync(HttpMethod.Post, "liveChat/bans?part=snippet", new JsonObject { ["snippet"] = snippet }, token);
++        var banId = result["id"]?.GetValue<string>();
++        if (!string.IsNullOrWhiteSpace(banId)) _banIdsByChannel[channelId] = banId;
++    }
++
++    public bool HasStoredBan(string channelId) =>
++        !string.IsNullOrWhiteSpace(channelId) && _banIdsByChannel.ContainsKey(channelId);
++
++    public async Task UnbanUserAsync(string channelId, CancellationToken token = default)
++    {
++        await EnsureTokenAsync(token);
++        if (string.IsNullOrWhiteSpace(channelId)) throw new InvalidOperationException("YouTube не передав ID каналу учасника.");
++        if (!_banIdsByChannel.TryGetValue(channelId, out var banId) || string.IsNullOrWhiteSpace(banId))
++            throw new InvalidOperationException("Немає збереженого YouTube ban ID для цього каналу в поточній сесії. Спочатку виконайте ban або timeout у цьому клієнті.");
++        await ApiAsync(HttpMethod.Delete, $"liveChat/bans?id={Uri.EscapeDataString(banId)}", null, token);
++        _banIdsByChannel.Remove(channelId);
+     }
+ 
+     public async Task<IReadOnlyList<YouTubeBroadcastSettings>> GetBroadcastsAsync(CancellationToken token = default)
+@@ -160,6 +186,19 @@ public sealed class YouTubeService : IAsyncDisposable
+         return result.OrderByDescending(x => x.LifeCycleStatus == "live").ThenBy(x => x.ScheduledStartTime).ToList();
+     }
+ 
++    public async Task RefreshAuthenticatedChannelAsync(CancellationToken token = default)
++    {
++        await EnsureTokenAsync(token);
++        var json = await ApiAsync(HttpMethod.Get, "channels?part=snippet&mine=true", null, token);
++        var item = json["items"]?.AsArray().FirstOrDefault()?.AsObject();
++        AuthenticatedChannelId = item?["id"]?.GetValue<string>() ?? string.Empty;
++        AuthenticatedChannelTitle = (item?["snippet"] as JsonObject)?["title"]?.GetValue<string>() ?? string.Empty;
++        if (!string.IsNullOrWhiteSpace(AuthenticatedChannelTitle))
++            _settings.Value.YouTubeChannelName = AuthenticatedChannelTitle;
++        _settings.Value.YouTubeChannelId = AuthenticatedChannelId;
++        _settingsService.Save(_settings.Value);
++    }
++
+     public async Task UpdateBroadcastAsync(YouTubeBroadcastSettings broadcast, CancellationToken token = default)
+     {
+         if (string.IsNullOrWhiteSpace(broadcast.Id)) throw new InvalidOperationException("Оберіть трансляцію YouTube.");
+@@ -199,7 +238,11 @@ public sealed class YouTubeService : IAsyncDisposable
+         _credentials.DeleteSecret("YOUTUBE_TOKEN");
+         _credentials.DeleteSecret("YOUTUBE_CLIENT_SECRET");
+         _token = new OAuthToken();
++        _banIdsByChannel.Clear();
++        AuthenticatedChannelId = string.Empty;
++        AuthenticatedChannelTitle = string.Empty;
+         _settings.Value.YouTubeActiveBroadcastId = string.Empty;
++        _settings.Value.YouTubeChannelId = string.Empty;
+         _settingsService.Save(_settings.Value);
+         SetStatus("АВТОРИЗАЦІЮ ВИДАЛЕНО");
+     }
+@@ -348,12 +391,14 @@ public sealed class YouTubeService : IAsyncDisposable
+                     Amount = 1, Currency = "MEMBER", Message = level + (string.IsNullOrWhiteSpace(text) ? string.Empty : " • " + text), Accent = "#FF4B4B"
+                 });
+             }
++            var authorChannelId = author["channelId"]?.GetValue<string>() ?? string.Empty;
+             MessageReceived?.Invoke(this, new ChatMessage
+             {
+                 Platform = "YOUTUBE",
+                 ExternalId = item["id"]?.GetValue<string>() ?? string.Empty,
+                 User = author["displayName"]?.GetValue<string>() ?? "YouTube",
+-                AuthorId = author["channelId"]?.GetValue<string>() ?? string.Empty,
++                AuthorId = authorChannelId,
++                ChannelUrl = string.IsNullOrWhiteSpace(authorChannelId) ? string.Empty : "https://www.youtube.com/channel/" + authorChannelId,
+                 Text = text,
+                 Role = role,
+                 Time = DateTime.Now
+diff --git a/Windows/ChannelConnectionsWindow.xaml b/Windows/ChannelConnectionsWindow.xaml
+index 6c11b33..cc7cb7a 100644
+--- a/Windows/ChannelConnectionsWindow.xaml
++++ b/Windows/ChannelConnectionsWindow.xaml
+@@ -26,7 +26,7 @@
+                     <Border Grid.Column="4" Style="{StaticResource PanelBorder}" Margin="7,0">
+                         <Grid><Grid.RowDefinitions><RowDefinition Height="42"/><RowDefinition Height="72"/><RowDefinition Height="72"/><RowDefinition Height="72"/><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/><RowDefinition/></Grid.RowDefinitions>
+                             <StackPanel Orientation="Horizontal"><Image Source="/TiHiY.StreamControlCenter;component/Assets/Platforms/youtube.png" Style="{StaticResource PlatformIconImage}" Width="27" Height="25"/><TextBlock Text="  YOUTUBE" FontSize="20" FontWeight="Bold" Foreground="#FF4B4B" VerticalAlignment="Center"/></StackPanel>
+-                            <StackPanel Grid.Row="1"><TextBlock Text="Назва каналу" Foreground="{DynamicResource Muted}"/><TextBox x:Name="YouTubeChannelBox" Margin="0,5,0,0"/></StackPanel>
++                            <StackPanel Grid.Row="1"><TextBlock Text="Авторизований канал (YouTube API channels.list mine=true)" Foreground="{DynamicResource Muted}"/><TextBox x:Name="YouTubeChannelBox" Margin="0,5,0,0" IsReadOnly="True"/><TextBox x:Name="YouTubeChannelUrlBox" Margin="0,5,0,0" IsReadOnly="True"/></StackPanel>
+                             <StackPanel Grid.Row="2"><TextBlock Text="Google OAuth Client ID" Foreground="{DynamicResource Muted}"/><TextBox x:Name="YouTubeClientIdBox" Margin="0,5,0,0"/></StackPanel>
+                             <StackPanel Grid.Row="3"><TextBlock Text="Google OAuth Client Secret" Foreground="{DynamicResource Muted}"/><PasswordBox x:Name="YouTubeClientSecretBox" Margin="0,5,0,0"/></StackPanel>
+                             <CheckBox Grid.Row="4" x:Name="YouTubeAutoConnectCheck" Content="Автопідключення при запуску" Margin="0,8"/>
+diff --git a/Windows/ChannelConnectionsWindow.xaml.cs b/Windows/ChannelConnectionsWindow.xaml.cs
+index bef5884..458a222 100644
+--- a/Windows/ChannelConnectionsWindow.xaml.cs
++++ b/Windows/ChannelConnectionsWindow.xaml.cs
+@@ -29,7 +29,12 @@ public partial class ChannelConnectionsWindow : ModuleWindowBase
+         TwitchClientIdBox.Text = s.TwitchClientId;
+         TwitchClientSecretBox.Password = _services.Credentials.LoadSecret("TWITCH_CLIENT_SECRET");
+         TwitchAutoConnectCheck.IsChecked = s.TwitchAutoConnect;
+-        YouTubeChannelBox.Text = s.YouTubeChannelName;
++        YouTubeChannelBox.Text = string.IsNullOrWhiteSpace(_services.YouTube.AuthenticatedChannelTitle)
++            ? s.YouTubeChannelName
++            : _services.YouTube.AuthenticatedChannelTitle;
++        YouTubeChannelUrlBox.Text = string.IsNullOrWhiteSpace(_services.YouTube.AuthenticatedChannelUrl)
++            ? (string.IsNullOrWhiteSpace(s.YouTubeChannelId) ? string.Empty : "https://www.youtube.com/channel/" + s.YouTubeChannelId)
++            : _services.YouTube.AuthenticatedChannelUrl;
+         YouTubeClientIdBox.Text = s.YouTubeClientId;
+         YouTubeClientSecretBox.Password = _services.Credentials.LoadSecret("YOUTUBE_CLIENT_SECRET");
+         YouTubeAutoConnectCheck.IsChecked = s.YouTubeAutoConnect;
+@@ -48,7 +53,10 @@ public partial class ChannelConnectionsWindow : ModuleWindowBase
+         s.TwitchChannelName = TwitchChannelBox.Text.Trim().TrimStart('#');
+         s.TwitchClientId = TwitchClientIdBox.Text.Trim();
+         s.TwitchAutoConnect = TwitchAutoConnectCheck.IsChecked == true;
+-        s.YouTubeChannelName = YouTubeChannelBox.Text.Trim();
++        if (!string.IsNullOrWhiteSpace(_services.YouTube.AuthenticatedChannelTitle))
++            s.YouTubeChannelName = _services.YouTube.AuthenticatedChannelTitle;
++        else if (!string.IsNullOrWhiteSpace(YouTubeChannelBox.Text))
++            s.YouTubeChannelName = YouTubeChannelBox.Text.Trim();
+         s.YouTubeClientId = YouTubeClientIdBox.Text.Trim();
+         s.YouTubeAutoConnect = YouTubeAutoConnectCheck.IsChecked == true;
+         s.DiscordApplicationId = DiscordApplicationIdBox.Text.Trim();
+@@ -130,7 +138,14 @@ public partial class ChannelConnectionsWindow : ModuleWindowBase
+     {
+         TwitchStatusText.Text = $"Статус: {_services.Twitch.Status}\nКанал: {_services.Settings.Value.TwitchChannelName}";
+         TwitchStatusText.Foreground = (Brush)FindResource(_services.Twitch.IsChatConnected ? "Green" : "Yellow");
+-        YouTubeStatusText.Text = $"Статус: {_services.YouTube.Status}\nКанал: {_services.Settings.Value.YouTubeChannelName}";
++        var ytChannel = string.IsNullOrWhiteSpace(_services.YouTube.AuthenticatedChannelTitle)
++            ? _services.Settings.Value.YouTubeChannelName
++            : _services.YouTube.AuthenticatedChannelTitle;
++        var ytUrl = _services.YouTube.AuthenticatedChannelUrl;
++        YouTubeStatusText.Text = $"Статус: {_services.YouTube.Status}\nКанал: {ytChannel}"
++            + (string.IsNullOrWhiteSpace(ytUrl) ? string.Empty : "\n" + ytUrl);
++        YouTubeChannelBox.Text = ytChannel;
++        if (YouTubeChannelUrlBox is not null) YouTubeChannelUrlBox.Text = ytUrl;
+         YouTubeStatusText.Foreground = (Brush)FindResource(_services.YouTube.IsConnected ? "Green" : "Yellow");
+     }
+ 
+diff --git a/Windows/ChatBotWindow.xaml b/Windows/ChatBotWindow.xaml
+index dcc6b78..bd2d392 100644
+--- a/Windows/ChatBotWindow.xaml
++++ b/Windows/ChatBotWindow.xaml
+@@ -55,9 +55,9 @@
+                             <TextBlock Text="ДІАГНОСТИКА ЧАТУ" FontSize="18" FontWeight="Bold" Foreground="{DynamicResource Cyan}"/>
+                             <StackPanel Grid.Row="1" VerticalAlignment="Center">
+                                 <TextBlock Text="Повідомлення надсилаються у реально підключені Twitch і YouTube чати. Авторизація виконується у модулі «Канали та Discord», токени не зберігаються у відкритому файлі." TextWrapping="Wrap" Foreground="{DynamicResource Muted}"/>
+-                                <Button Content="ДОДАТИ ЗВЕРНЕННЯ ДО TiHiY-DED" Click="AddMention_Click" Margin="4,20,4,4"/>
+-                                <Button Content="ДОДАТИ ПІДПИСНИКА" Click="AddSubscriber_Click"/>
+-                                <Button Content="ДОДАТИ МОДЕРАТОРА" Click="AddModerator_Click"/>
++                                <Button Content="ДОДАТИ ЗВЕРНЕННЯ ДО TiHiY-DED" Click="AddMention_Click" Margin="4,20,4,4" IsEnabled="False"/>
++                                <Button Content="ДОДАТИ ПІДПИСНИКА" Click="AddSubscriber_Click" IsEnabled="False"/>
++                                <Button Content="ДОДАТИ МОДЕРАТОРА" Click="AddModerator_Click" IsEnabled="False"/>
+                             </StackPanel>
+                             <TextBlock Grid.Row="2" Text="Вікно чату працює незалежно від головного вікна" Foreground="{DynamicResource Green}" VerticalAlignment="Center" TextWrapping="Wrap"/>
+                         </Grid>
+diff --git a/Windows/ChatBotWindow.xaml.cs b/Windows/ChatBotWindow.xaml.cs
+index 20f87d1..dddfe7b 100644
+--- a/Windows/ChatBotWindow.xaml.cs
++++ b/Windows/ChatBotWindow.xaml.cs
+@@ -53,9 +53,10 @@ public partial class ChatBotWindow : ModuleWindowBase
+         ManualMessageTextBox.Clear();
+     }
+ 
+-    private void AddMention_Click(object sender, RoutedEventArgs e) => _services.Chat.AddIncoming("TWITCH", "TestViewer", "TiHiY-DED, перевірка виділення звернення!", "Viewer");
+-    private void AddSubscriber_Click(object sender, RoutedEventArgs e) => _services.Chat.AddIncoming("YOUTUBE", "MemberUA", "Повідомлення підписника", "Subscriber");
+-    private void AddModerator_Click(object sender, RoutedEventArgs e) => _services.Chat.AddIncoming("TWITCH", "ModeratorUA", "Повідомлення модератора", "Moderator");
++    private void AddMention_Click(object sender, RoutedEventArgs e) =>
++        MessageBox.Show(this, "Local preview rows are disabled. YouTube compliance recordings must use real live-chat events from the YouTube API.", "YouTube API", MessageBoxButton.OK, MessageBoxImage.Information);
++    private void AddSubscriber_Click(object sender, RoutedEventArgs e) => AddMention_Click(sender, e);
++    private void AddModerator_Click(object sender, RoutedEventArgs e) => AddMention_Click(sender, e);
+ 
+ 
+     private void InitializeChatContextMenu()
+@@ -70,6 +71,10 @@ public partial class ChatBotWindow : ModuleWindowBase
+         ban.Click += BanChatUser_Click;
+         menu.Items.Add(ban);
+ 
++        var unban = new MenuItem { Header = "ЗНЯТИ БАН YOUTUBE" };
++        unban.Click += UnbanChatUser_Click;
++        menu.Items.Add(unban);
++
+         menu.Items.Add(new Separator());
+ 
+         var delete = new MenuItem { Header = "ВИДАЛИТИ ПОВІДОМЛЕННЯ" };
+@@ -82,7 +87,11 @@ public partial class ChatBotWindow : ModuleWindowBase
+             foreach (var item in menu.Items.OfType<MenuItem>())
+             {
+                 item.Tag = message;
+-                item.IsEnabled = message is not null;
++                var youtube = message is not null && message.Platform.Equals("YOUTUBE", StringComparison.OrdinalIgnoreCase);
++                if (item.Header is string header && header.Contains("ЗНЯТИ БАН", StringComparison.Ordinal))
++                    item.IsEnabled = youtube && _services.YouTube.HasStoredBan(message!.AuthorId);
++                else
++                    item.IsEnabled = message is not null;
+             }
+         };
+ 
+@@ -109,16 +118,31 @@ public partial class ChatBotWindow : ModuleWindowBase
+     private async void MuteChatUser_Click(object sender, RoutedEventArgs e)
+     {
+         if (sender is not MenuItem { Tag: ChatMessage message }) return;
++        if (!ConfirmYouTubeModeration(message, "Timeout this YouTube channel in live chat for 10 minutes?")) return;
+         await RunModerationAsync(message, "мут", () => _services.ModerateChatUserAsync(message, false, 600));
+     }
+ 
+     private async void BanChatUser_Click(object sender, RoutedEventArgs e)
+     {
+         if (sender is not MenuItem { Tag: ChatMessage message }) return;
+-        if (MessageBox.Show(this, $"Забанити {message.User} на {message.Platform}?", "Модерація чату", MessageBoxButton.YesNo, MessageBoxImage.Warning) != MessageBoxResult.Yes) return;
++        if (!ConfirmYouTubeModeration(message, "Permanently ban this YouTube channel from live chat?")) return;
+         await RunModerationAsync(message, "бан", () => _services.ModerateChatUserAsync(message, true));
+     }
+ 
++    private async void UnbanChatUser_Click(object sender, RoutedEventArgs e)
++    {
++        if (sender is not MenuItem { Tag: ChatMessage message }) return;
++        if (!ConfirmYouTubeModeration(message, "Remove the live-chat ban from this YouTube channel?")) return;
++        await RunModerationAsync(message, "зняття бану", () => _services.UnbanChatUserAsync(message));
++    }
++
++    private bool ConfirmYouTubeModeration(ChatMessage message, string actionEnglish)
++    {
++        if (!message.Platform.Equals("YOUTUBE", StringComparison.OrdinalIgnoreCase))
++            return MessageBox.Show(this, $"{actionEnglish}\n\n{message.User} / {message.Platform}", "Chat moderation", MessageBoxButton.YesNo, MessageBoxImage.Warning) == MessageBoxResult.Yes;
++        return MessageBox.Show(this, _services.BuildYouTubeModerationPrompt(message, actionEnglish), "YouTube live chat moderation", MessageBoxButton.YesNo, MessageBoxImage.Warning) == MessageBoxResult.Yes;
++    }
++
+     private async void DeleteChatMessage_Click(object sender, RoutedEventArgs e)
+     {
+         if (sender is not MenuItem { Tag: ChatMessage message }) return;
+diff --git a/Windows/YouTubeStreamSettingsWindow.xaml b/Windows/YouTubeStreamSettingsWindow.xaml
+index 8447907..fe334da 100644
+--- a/Windows/YouTubeStreamSettingsWindow.xaml
++++ b/Windows/YouTubeStreamSettingsWindow.xaml
+@@ -12,14 +12,15 @@
+                 </Border>
+                 <Border Grid.Row="1" Style="{StaticResource PanelBorder}" Margin="0,12">
+                     <Grid>
+-                        <Grid.RowDefinitions><RowDefinition Height="88"/><RowDefinition Height="78"/><RowDefinition Height="190"/><RowDefinition Height="82"/><RowDefinition Height="82"/><RowDefinition/><RowDefinition Height="58"/></Grid.RowDefinitions>
+-                        <StackPanel><TextBlock Text="Трансляція" Foreground="{DynamicResource Muted}"/><Grid Margin="0,6,0,0"><Grid.ColumnDefinitions><ColumnDefinition/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions><ComboBox x:Name="BroadcastCombo" DisplayMemberPath="Display" SelectionChanged="BroadcastCombo_SelectionChanged"/><Button Grid.Column="1" Content="ОНОВИТИ СПИСОК" Click="RefreshBroadcasts_Click" Background="#1453A5"/></Grid></StackPanel>
+-                        <StackPanel Grid.Row="1"><TextBlock Text="Назва трансляції" Foreground="{DynamicResource Muted}"/><TextBox x:Name="TitleBox" Margin="0,6,0,0"/></StackPanel>
+-                        <StackPanel Grid.Row="2"><TextBlock Text="Опис" Foreground="{DynamicResource Muted}"/><TextBox x:Name="DescriptionBox" Height="150" AcceptsReturn="True" TextWrapping="Wrap" VerticalScrollBarVisibility="Disabled" Margin="0,6,0,0"/></StackPanel>
+-                        <Grid Grid.Row="3"><Grid.ColumnDefinitions><ColumnDefinition/><ColumnDefinition/></Grid.ColumnDefinitions><StackPanel Margin="0,0,8,0"><TextBlock Text="Доступ" Foreground="{DynamicResource Muted}"/><ComboBox x:Name="PrivacyCombo" Margin="0,6,0,0" SelectedIndex="0"><ComboBoxItem Content="public"/><ComboBoxItem Content="unlisted"/><ComboBoxItem Content="private"/></ComboBox></StackPanel><StackPanel Grid.Column="1" Margin="8,0,0,0"><TextBlock Text="Запланований початок" Foreground="{DynamicResource Muted}"/><TextBox x:Name="ScheduledStartBox" Margin="0,6,0,0"/></StackPanel></Grid>
+-                        <Grid Grid.Row="4"><Grid.ColumnDefinitions><ColumnDefinition/><ColumnDefinition/></Grid.ColumnDefinitions><StackPanel><TextBlock Text="Стан" Foreground="{DynamicResource Muted}"/><TextBlock x:Name="LifeCycleText" Text="—" FontSize="17" FontWeight="Bold" Margin="0,8,0,0"/></StackPanel><StackPanel Grid.Column="1"><TextBlock Text="Посилання" Foreground="{DynamicResource Muted}"/><TextBox x:Name="StreamUrlBox" IsReadOnly="True" Margin="0,6,0,0"/></StackPanel></Grid>
+-                        <Border Grid.Row="5" Background="{DynamicResource Panel}" BorderBrush="{DynamicResource Line}" BorderThickness="1" CornerRadius="5" Padding="12"><TextBlock Text="Це вікно редагує активну або заплановану трансляцію вашого авторизованого YouTube-каналу через YouTube Data API. Для роботи спочатку авторизуйте YouTube у модулі «Канали та Discord»." Foreground="{DynamicResource Muted}" TextWrapping="Wrap"/></Border>
+-                        <WrapPanel Grid.Row="6" HorizontalAlignment="Right" VerticalAlignment="Center"><Button Content="ПІДКЛЮЧИТИ / АВТОРИЗУВАТИ" Click="OpenChannels_Click" Background="#293577" Tag="/TiHiY.StreamControlCenter;component/Assets/Platforms/youtube.png" ContentTemplate="{StaticResource BrandButtonContentTemplate}"/><Button Content="ВІДКРИТИ YOUTUBE STUDIO" Click="OpenYouTube_Click" Tag="/TiHiY.StreamControlCenter;component/Assets/Platforms/youtube.png" ContentTemplate="{StaticResource BrandButtonContentTemplate}"/><Button Content="ЗБЕРЕГТИ В YOUTUBE" Click="SaveBroadcast_Click" Background="#7C2027" Tag="/TiHiY.StreamControlCenter;component/Assets/Platforms/youtube.png" ContentTemplate="{StaticResource BrandButtonContentTemplate}"/></WrapPanel>
++                        <Grid.RowDefinitions><RowDefinition Height="52"/><RowDefinition Height="88"/><RowDefinition Height="78"/><RowDefinition Height="190"/><RowDefinition Height="82"/><RowDefinition Height="82"/><RowDefinition/><RowDefinition Height="58"/></Grid.RowDefinitions>
++                        <StackPanel><TextBlock Text="Авторизований канал" Foreground="{DynamicResource Muted}"/><TextBlock x:Name="AuthenticatedChannelText" Text="—" FontWeight="Bold" TextWrapping="Wrap" Margin="0,4,0,0"/></StackPanel>
++                        <StackPanel Grid.Row="1"><TextBlock Text="Трансляція" Foreground="{DynamicResource Muted}"/><Grid Margin="0,6,0,0"><Grid.ColumnDefinitions><ColumnDefinition/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions><ComboBox x:Name="BroadcastCombo" DisplayMemberPath="Display" SelectionChanged="BroadcastCombo_SelectionChanged"/><Button Grid.Column="1" Content="ОНОВИТИ СПИСОК" Click="RefreshBroadcasts_Click" Background="#1453A5"/></Grid></StackPanel>
++                        <StackPanel Grid.Row="2"><TextBlock Text="Назва трансляції" Foreground="{DynamicResource Muted}"/><TextBox x:Name="TitleBox" Margin="0,6,0,0"/></StackPanel>
++                        <StackPanel Grid.Row="3"><TextBlock Text="Опис" Foreground="{DynamicResource Muted}"/><TextBox x:Name="DescriptionBox" Height="150" AcceptsReturn="True" TextWrapping="Wrap" VerticalScrollBarVisibility="Disabled" Margin="0,6,0,0"/></StackPanel>
++                        <Grid Grid.Row="4"><Grid.ColumnDefinitions><ColumnDefinition/><ColumnDefinition/></Grid.ColumnDefinitions><StackPanel Margin="0,0,8,0"><TextBlock Text="Доступ" Foreground="{DynamicResource Muted}"/><ComboBox x:Name="PrivacyCombo" Margin="0,6,0,0" SelectedIndex="0"><ComboBoxItem Content="public"/><ComboBoxItem Content="unlisted"/><ComboBoxItem Content="private"/></ComboBox></StackPanel><StackPanel Grid.Column="1" Margin="8,0,0,0"><TextBlock Text="Запланований початок" Foreground="{DynamicResource Muted}"/><TextBox x:Name="ScheduledStartBox" Margin="0,6,0,0"/></StackPanel></Grid>
++                        <Grid Grid.Row="5"><Grid.ColumnDefinitions><ColumnDefinition/><ColumnDefinition/></Grid.ColumnDefinitions><StackPanel><TextBlock Text="Стан" Foreground="{DynamicResource Muted}"/><TextBlock x:Name="LifeCycleText" Text="—" FontSize="17" FontWeight="Bold" Margin="0,8,0,0"/></StackPanel><StackPanel Grid.Column="1"><TextBlock Text="Посилання" Foreground="{DynamicResource Muted}"/><TextBox x:Name="StreamUrlBox" IsReadOnly="True" Margin="0,6,0,0"/></StackPanel></Grid>
++                        <Border Grid.Row="6" Background="{DynamicResource Panel}" BorderBrush="{DynamicResource Line}" BorderThickness="1" CornerRadius="5" Padding="12"><TextBlock Text="Це вікно читає liveBroadcasts.list (mine=true) і показує title, lifeCycleStatus, privacy та URL ефіру авторизованого каналу. Для роботи спочатку авторизуйте YouTube у модулі «Канали»." Foreground="{DynamicResource Muted}" TextWrapping="Wrap"/></Border>
++                        <WrapPanel Grid.Row="7" HorizontalAlignment="Right" VerticalAlignment="Center"><Button Content="ПІДКЛЮЧИТИ / АВТОРИЗУВАТИ" Click="OpenChannels_Click" Background="#293577" Tag="/TiHiY.StreamControlCenter;component/Assets/Platforms/youtube.png" ContentTemplate="{StaticResource BrandButtonContentTemplate}"/><Button Content="ВІДКРИТИ YOUTUBE STUDIO" Click="OpenYouTube_Click" Tag="/TiHiY.StreamControlCenter;component/Assets/Platforms/youtube.png" ContentTemplate="{StaticResource BrandButtonContentTemplate}"/><Button Content="ЗБЕРЕГТИ В YOUTUBE" Click="SaveBroadcast_Click" Background="#7C2027" Tag="/TiHiY.StreamControlCenter;component/Assets/Platforms/youtube.png" ContentTemplate="{StaticResource BrandButtonContentTemplate}"/></WrapPanel>
+                     </Grid>
+                 </Border>
+                 <Border Grid.Row="2" Background="{DynamicResource Panel}" BorderBrush="{DynamicResource Line}" BorderThickness="1" CornerRadius="5" Padding="10"><TextBlock x:Name="StatusText" Text="Натисніть «Оновити список»." Foreground="{DynamicResource Green}" VerticalAlignment="Center"/></Border>
+diff --git a/Windows/YouTubeStreamSettingsWindow.xaml.cs b/Windows/YouTubeStreamSettingsWindow.xaml.cs
+index a32c646..d8d91e8 100644
+--- a/Windows/YouTubeStreamSettingsWindow.xaml.cs
++++ b/Windows/YouTubeStreamSettingsWindow.xaml.cs
+@@ -21,12 +21,24 @@ public partial class YouTubeStreamSettingsWindow : ModuleWindowBase
+     private async void Window_Loaded(object sender, RoutedEventArgs e)
+     {
+         UpdateAuthorizationUi();
+-        if (_services.YouTube.IsAuthorized) await RefreshAsync();
++        if (_services.YouTube.IsAuthorized)
++        {
++            try { await _services.YouTube.RefreshAuthenticatedChannelAsync(); } catch { }
++            UpdateAuthorizationUi();
++            await RefreshAsync();
++        }
+         else StatusText.Text = "YouTube не авторизовано. Натисніть «ПІДКЛЮЧИТИ / АВТОРИЗУВАТИ».";
+     }
+ 
+     private void UpdateAuthorizationUi()
+     {
++        var title = string.IsNullOrWhiteSpace(_services.YouTube.AuthenticatedChannelTitle)
++            ? _services.Settings.Value.YouTubeChannelName
++            : _services.YouTube.AuthenticatedChannelTitle;
++        var url = _services.YouTube.AuthenticatedChannelUrl;
++        AuthenticatedChannelText.Text = string.IsNullOrWhiteSpace(title) && string.IsNullOrWhiteSpace(url)
++            ? "YouTube не авторизовано"
++            : title + (string.IsNullOrWhiteSpace(url) ? string.Empty : "  •  " + url);
+         var enabled = _services.YouTube.IsAuthorized;
+         BroadcastCombo.IsEnabled = enabled;
+         TitleBox.IsEnabled = enabled;

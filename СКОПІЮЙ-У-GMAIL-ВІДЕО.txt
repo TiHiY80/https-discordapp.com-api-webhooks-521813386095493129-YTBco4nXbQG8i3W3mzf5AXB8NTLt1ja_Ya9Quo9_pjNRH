@@ -1,0 +1,46 @@
+НЕ КОПІЮЙ ЦЕЙ ТЕКСТ У GMAIL ПОКИ ЩО.
+Ефір уже ~8 хвилин (нормальна довжина). Бракує англійського голосу.
+Надішли MP4 (ЗРОБИТИ-ВІДЕО-ДЛЯ-GOOGLE.txt) — накладу голос і скажу «можна слати».
+------------------------------------------------------------
+
+Hello YouTube API Services Team,
+
+Thank you for the follow-up and for requesting an English step-by-step
+screencast of the complete workflow.
+
+Please use this recording of the API client in operation on a live
+broadcast of the authenticated creator channel (TiHiY-DED):
+
+https://www.youtube.com/live/Bc9jINaQ0Rk
+https://www.youtube.com/watch?v=Bc9jINaQ0Rk
+
+Broadcast title: TiHiY StreamControl Center API compliance test
+Product: TiHiY StreamControl Center
+Source: https://github.com/sergsivak-lang/TiHiY-StreamControl-Center
+OAuth: Desktop app, redirect http://127.0.0.1:17847/
+Scope: https://www.googleapis.com/auth/youtube.force-ssl
+
+The recording shows the end-to-end workflow and results:
+
+1. YouTube OAuth authorization from the desktop client (Channels)
+2. Retrieval of the live broadcast (liveBroadcasts.list) and live
+   statistics on the main console (videos.list: viewers and likes)
+3. Real-time YouTube Live Chat (liveChatMessages.list)
+4. Send a chat message (liveChatMessages.insert)
+5. Delete a chat message (liveChatMessages.delete)
+6. Timeout and ban of a test chat user (liveChatBans.insert)
+7. End result: the signed-in creator’s own live session remains
+   connected in TiHiY StreamControl Center
+
+The client does not scrape third-party channels. Tokens and the OAuth
+client secret are stored in Windows Credential Manager, not shown in
+the recording.
+
+Please let us know if you need a shorter cut, on-screen English
+captions, or any other supporting material.
+
+Thank you,
+Serhii Syvak
+TiHiY StreamControl Center
+tihiy80tv@gmail.com
+This email is the preferred API contact.

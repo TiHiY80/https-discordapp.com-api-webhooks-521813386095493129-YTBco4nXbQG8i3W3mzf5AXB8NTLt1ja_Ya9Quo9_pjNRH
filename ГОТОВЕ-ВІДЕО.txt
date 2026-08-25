@@ -1,0 +1,15 @@
+Готове відео для Google: 5 хв 19 сек.
+
+З твого ефіру 8:14 я вирізав вікна YouTube Studio і порожні паузи.
+Лишив програму StreamControl: OAuth, ефір, чат, надсилання, бан.
+Англійський голос + субтитри вже накладені.
+
+Скачати файл (кнопка Download):
+https://github.com/TiHiY80/https-discordapp.com-api-webhooks-521813386095493129-YTBco4nXbQG8i3W3mzf5AXB8NTLt1ja_Ya9Quo9_pjNRH/raw/cursor/youtube-compliance-response-ab85/TiHiY-YouTube-API-compliance-screencast.mp4
+
+Що зробити тобі:
+1. Залий цей файл на YouTube як Неопублікований (Unlisted)
+2. Назву лиши: TiHiY StreamControl Center API compliance test
+3. Кинь лінк сюди в чат (не на пошту)
+
+Лист Google не надсилай, поки не буде лінка Unlisted.

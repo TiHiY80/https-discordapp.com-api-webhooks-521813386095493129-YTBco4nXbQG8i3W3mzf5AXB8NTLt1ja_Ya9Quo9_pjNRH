@@ -1,0 +1,47 @@
+1
+00:00:00,000 --> 00:00:10,500
+This is TiHiY StreamControl Center. It is a desktop API client for a content creator to manage their own YouTube live stream using YouTube API Services.
+
+2
+00:00:14,640 --> 00:00:32,200
+Step one: OAuth authorization. I open Channels. This is YouTube OAuth for a Desktop application. The redirect URI is 127.0.0.1 port 17847. The only OAuth scope requested is youtube.force-ssl.
+
+3
+00:00:38,350 --> 00:00:56,900
+I click Authorize and complete Google consent as the creator. After login, the client calls channels.list with mine=true. Here is the authenticated YouTube channel title and the channel URL. All later API calls use this signed-in account.
+
+4
+00:01:19,100 --> 00:01:37,800
+Step two: broadcast data retrieval. I open YouTube Broadcast. I click Refresh list. This list is liveBroadcasts.list with mine=true. Here you see the broadcast title, life cycle status live, privacy, and the watch URL.
+
+5
+00:01:52,030 --> 00:02:06,000
+On the main console, live statistics come from videos.list, parts liveStreamingDetails and statistics: concurrent viewers and like count.
+
+6
+00:02:12,190 --> 00:02:24,400
+Step three: real-time chat. Incoming messages are liveChatMessages.list. The user interface shows the author's display name, the message text, and the author's YouTube channel URL.
+
+7
+00:02:36,550 --> 00:02:45,800
+I send a message with the YouTube button. This is liveChatMessages.insert as the authenticated creator. End result: the message appears in live chat.
+
+8
+00:02:53,980 --> 00:03:01,000
+I delete that message. This is liveChatMessages.delete. End result: the message is removed from chat.
+
+9
+00:03:07,150 --> 00:03:26,700
+Moderation timeout. The confirmation dialog identifies the target YouTube channel name and channel URL, and the acting YouTube account name and channel URL. This call is liveChatBans.insert, temporary.
+
+10
+00:03:36,890 --> 00:03:48,700
+Permanent ban. The same dialog identifies the target channel and the acting account. This is liveChatBans.insert, permanent. End result: the test channel is banned from this live chat.
+
+11
+00:03:56,930 --> 00:04:06,400
+Unban. This is liveChatBans.delete. The dialog again shows the target and acting channel URLs. End result: the ban is removed.
+
+12
+00:04:14,570 --> 00:04:27,800
+Final result: this API client uses YouTube API Services only for the authenticated creator's own live broadcast, statistics, real-time chat, and moderation.

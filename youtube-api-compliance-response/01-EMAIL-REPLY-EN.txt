@@ -1,0 +1,109 @@
+Hello YouTube API Services Team,
+
+Thank you for the second notice. This is the correct API contact email
+for this project. Please also CC: [optional emails]
+
+This reply completes the information requested for our YouTube API Services
+compliance review and quota extension request. We are not resubmitting the
+audit form.
+
+Product
+- Name: TiHiY StreamControl Center
+- Type: Windows desktop API client for content creators (own live streams)
+- Public source: https://github.com/sergsivak-lang/TiHiY-StreamControl-Center
+- Creator channel used for this demonstration:
+  https://www.youtube.com/channel/UC4-t_7-LD_E15LXazQmsq_g
+
+Google Cloud / API project
+- Project name: [paste from Google Cloud Console]
+- Project number: [paste]
+- Project ID: [paste]
+- OAuth 2.0 client type: Desktop app
+- OAuth 2.0 client ID: [paste]
+- Redirect URI: http://127.0.0.1:17847/
+- APIs enabled: YouTube Data API v3
+- OAuth scope actually requested by the client (only this scope):
+  https://www.googleapis.com/auth/youtube.force-ssl
+
+Use case
+TiHiY StreamControl Center lets an authenticated creator manage their own
+YouTube live activity from one desktop console:
+1) retrieve the creator’s live broadcasts and current live state;
+2) display live statistics (concurrent viewers and likes);
+3) display real-time YouTube Live Chat;
+4) send, delete, timeout, and ban in that chat.
+
+We do not use YouTube API Services to scrape third-party channels or to
+republish YouTube audiovisual content. Access is limited to the Google
+account that completes OAuth.
+
+API methods used by the shipping client
+- liveBroadcasts.list (mine=true, part=id,snippet,status)
+  — find the creator’s broadcasts, title, privacy, lifeCycleStatus, liveChatId
+- liveBroadcasts.update (part=snippet,status)
+  — update title, description, scheduled start, and privacy of the creator’s broadcast
+- videos.list (part=liveStreamingDetails,statistics)
+  — concurrent viewers and likeCount for the active live broadcast
+- liveChatMessages.list (part=id,snippet,authorDetails)
+  — poll live chat; honor nextPageToken and pollingIntervalMillis
+- liveChatMessages.insert
+  — send a text message as the authenticated creator
+- liveChatMessages.delete
+  — delete a selected chat message
+- liveChatBans.insert
+  — temporary timeout or permanent ban of a chat participant
+    identified by authorDetails.channelId
+
+Methods not implemented in this client (not claimed, not shown):
+- liveStreams.list
+- liveChatMessages.streamList
+- liveChatBans.delete (unban)
+- liveChatModerators.*
+- channels.list
+
+Required Minimum Functionality (live chat / moderation)
+- Incoming chat shows the author’s display name (authorDetails.displayName)
+  and the message text (snippet.displayMessage).
+- Ban / timeout confirmation names the target user and platform
+  (YouTube). The API call uses that user’s channelId.
+- Delete, timeout, and ban are performed with the OAuth token of the
+  signed-in creator. The client status UI shows the connected YouTube
+  session.
+- User tokens and the OAuth client secret are stored in Windows
+  Credential Manager, not in source control.
+
+Screencast
+A single end-to-end recording of the real API client is here:
+[PASTE unlisted YouTube or Google Drive link]
+
+Timecodes (fill after recording; see 05-TIMECODES-TEMPLATE-EN.txt):
+- [m:ss] Application start; product name visible
+- [m:ss] YouTube OAuth (Desktop loopback) and connected session
+- [m:ss] liveBroadcasts.list — current / available broadcast, title, status
+- [m:ss] videos.list — live viewers and likes in the client
+- [m:ss] liveChatMessages.list — real-time incoming chat
+- [m:ss] liveChatMessages.insert — send a message
+- [m:ss] liveChatMessages.delete — delete a message
+- [m:ss] liveChatBans.insert — timeout and/or permanent ban
+- [m:ss] Result visible in the client / live chat
+
+The recording uses a controlled unlisted test broadcast on the
+authenticated creator’s own channel. No client secrets or refresh tokens
+are shown.
+
+Quota
+- Current default allocation: 10,000 units/day
+- Requested quota: [number] units/day
+- Justification: [e.g. N concurrent creator sessions × estimated units
+  per live poll cycle for liveBroadcasts.list + videos.list +
+  liveChatMessages.list]
+
+Please let us know if you need a test account, additional screenshots,
+or any other supporting material.
+
+Thank you,
+Serhii Syvak
+TiHiY StreamControl Center
+tihiy80tv@gmail.com
+[phone, optional]
+This email is the preferred API contact.
